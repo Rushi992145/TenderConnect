@@ -128,6 +128,22 @@ export default function ProfilePage() {
     }
   }, [hasCompany, fetchGoodsServices, fetchMyApplications, fetchMyTenders]);
 
+  useEffect(() => {
+    if (isLoggedIn && token && (!company || !company.name)) {
+      apiFetch("/companies/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((data) => {
+          if (data && data.name) {
+            dispatch(setCompany(data));
+          }
+        })
+        .catch((err) => {
+          // If 404, user has no company, so do nothing
+        });
+    }
+  }, [isLoggedIn, token]);
+
   async function fetchTenderApplications(tenderId: number) {
     try {
       const data = await apiFetch(`/applications/tender/${tenderId}`, {
