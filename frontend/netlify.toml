@@ -1,0 +1,45 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Handle client-side routing
+[[redirects]]
+  from = "/companies"
+  to = "/companies/"
+  status = 301
+
+[[redirects]]
+  from = "/tenders"
+  to = "/tenders/"
+  status = 301
+
+[[redirects]]
+  from = "/search"
+  to = "/search/"
+  status = 301
+
+[[redirects]]
+  from = "/login"
+  to = "/login/"
+  status = 301
+
+[[redirects]]
+  from = "/register"
+  to = "/register/"
+  status = 301
+
+[[redirects]]
+  from = "/profile"
+  to = "/profile/"
+  status = 301 

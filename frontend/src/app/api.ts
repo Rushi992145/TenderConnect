@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+    ? 'http://localhost:4000' 
+    : 'https://your-backend-domain.com'); // Replace with your actual backend URL
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
