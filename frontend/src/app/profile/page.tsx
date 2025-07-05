@@ -138,11 +138,11 @@ export default function ProfilePage() {
             dispatch(setCompany(data));
           }
         })
-        .catch((err) => {
+        .catch(() => {
           // If 404, user has no company, so do nothing
         });
     }
-  }, [isLoggedIn, token]);
+  }, [isLoggedIn, token, company, dispatch]);
 
   async function fetchTenderApplications(tenderId: number) {
     try {
