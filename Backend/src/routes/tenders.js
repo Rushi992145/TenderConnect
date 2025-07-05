@@ -36,11 +36,37 @@ router.get('/', async (req, res) => {
   const offset = (page - 1) * limit;
   try {
     const tenders = await db('tenders')
-      .select('id', 'company_id', 'title', 'description', 'deadline', 'budget', 'created_at')
-      .orderBy('created_at', 'desc')
+      .select(
+        'tenders.id',
+        'tenders.company_id',
+        'tenders.title',
+        'tenders.description',
+        'tenders.deadline',
+        'tenders.budget',
+        'tenders.created_at',
+        'companies.name as company_name',
+        'companies.industry as company_industry'
+      )
+      .join('companies', 'tenders.company_id', 'companies.id')
+      .orderBy('tenders.created_at', 'desc')
       .limit(limit)
       .offset(offset);
-    res.json({ page, limit, tenders });
+    
+    // Get applications count for each tender
+    const tendersWithApplications = await Promise.all(
+      tenders.map(async (tender) => {
+        const applicationsCount = await db('applications')
+          .where({ tender_id: tender.id })
+          .count('* as count')
+          .first();
+        return {
+          ...tender,
+          applications_count: parseInt(applicationsCount.count)
+        };
+      })
+    );
+    
+    res.json({ page, limit, tenders: tendersWithApplications });
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -55,7 +81,22 @@ router.get('/my', authenticateJWT, async (req, res) => {
       .where({ company_id: company.id })
       .select('id', 'title', 'description', 'deadline', 'budget', 'created_at')
       .orderBy('created_at', 'desc');
-    res.json(tenders);
+    
+    // Get applications count for each tender
+    const tendersWithApplications = await Promise.all(
+      tenders.map(async (tender) => {
+        const applicationsCount = await db('applications')
+          .where({ tender_id: tender.id })
+          .count('* as count')
+          .first();
+        return {
+          ...tender,
+          applications_count: parseInt(applicationsCount.count)
+        };
+      })
+    );
+    
+    res.json(tendersWithApplications);
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }

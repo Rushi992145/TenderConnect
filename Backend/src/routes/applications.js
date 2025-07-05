@@ -37,8 +37,16 @@ router.get('/tender/:tenderId', authenticateJWT, async (req, res) => {
     const tender = await db('tenders').where({ id: req.params.tenderId, company_id: company.id }).first();
     if (!tender) return res.status(403).json({ error: 'Not authorized to view applications for this tender' });
     const applications = await db('applications')
-      .where({ tender_id: req.params.tenderId })
-      .select('id', 'company_id', 'proposal_text', 'created_at');
+      .where({ 'applications.tender_id': req.params.tenderId })
+      .join('companies', 'applications.company_id', 'companies.id')
+      .select(
+        'applications.id',
+        'applications.company_id',
+        'applications.proposal_text',
+        'applications.created_at',
+        'companies.name as company_name',
+        'companies.industry as company_industry'
+      );
     res.json(applications);
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
@@ -51,8 +59,18 @@ router.get('/my', authenticateJWT, async (req, res) => {
     const company = await db('companies').where({ user_id: req.user.id }).first();
     if (!company) return res.status(404).json({ error: 'Company not found' });
     const applications = await db('applications')
-      .where({ company_id: company.id })
-      .select('id', 'tender_id', 'proposal_text', 'created_at');
+      .where({ 'applications.company_id': company.id })
+      .join('tenders', 'applications.tender_id', 'tenders.id')
+      .select(
+        'applications.id',
+        'applications.tender_id',
+        'applications.proposal_text',
+        'applications.created_at',
+        'tenders.title as tender_title',
+        'tenders.description as tender_description',
+        'tenders.deadline as tender_deadline',
+        'tenders.budget as tender_budget'
+      );
     res.json(applications);
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });

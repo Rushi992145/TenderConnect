@@ -26,6 +26,15 @@ app.get('/db-test', async (req, res) => {
   }
 });
 
+app.get('/test-companies', async (req, res) => {
+  try {
+    const companies = await db('companies').select('*').limit(5);
+    res.json({ companies, count: companies.length });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch companies', details: error.message });
+  }
+});
+
 app.use('/auth', authRouter);
 app.use('/companies', companiesRouter);
 app.use('/tenders', tendersRouter);

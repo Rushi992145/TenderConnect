@@ -44,6 +44,8 @@ export default function Navbar() {
       <div className="flex items-center gap-6 text-base font-medium">
         <Link href="/" className="hover:text-gray-300 transition">Home</Link>
         <Link href="/tenders" className="hover:text-gray-300 transition">Tenders</Link>
+        <Link href="/companies" className="hover:text-gray-300 transition">Companies</Link>
+        <Link href="/search" className="hover:text-gray-300 transition">Search</Link>
         {isLoggedIn && (
           <div className="relative" ref={dropdownRef}>
             <button
