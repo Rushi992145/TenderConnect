@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../api";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Company {
   id: number;
@@ -45,16 +46,41 @@ export default function SearchPage() {
   const [industries, setIndustries] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
 
+  const performSearch = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...searchParams,
+      });
+      
+      console.log('Searching with params:', params.toString());
+      const data: SearchResponse = await apiFetch(`/search/companies?${params}`);
+      console.log('Search response:', data);
+      setCompanies(data.companies);
+      setPagination(data.pagination);
+    } catch (err: unknown) {
+      console.error('Search error:', err);
+      setError(err instanceof Error ? err.message : "Failed to search companies");
+    } finally {
+      setLoading(false);
+    }
+  }, [searchParams, pagination.page, pagination.limit]);
+
   useEffect(() => {
     fetchIndustries();
     fetchServices();
+    testBackendConnection();
+    testSearchEndpoints();
   }, []);
 
   useEffect(() => {
     if (searchParams.name || searchParams.industry || searchParams.service) {
       performSearch();
     }
-  }, [searchParams, pagination.page]);
+  }, [searchParams, pagination.page, pagination.limit, performSearch]);
 
   async function fetchIndustries() {
     try {
@@ -74,23 +100,36 @@ export default function SearchPage() {
     }
   }
 
-  async function performSearch() {
-    setLoading(true);
-    setError("");
+  // Test backend connectivity
+  async function testBackendConnection() {
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...searchParams,
-      });
+      console.log('Testing backend connection...');
+      const response = await fetch('http://localhost:4000/');
+      console.log('Backend response:', response.status, response.statusText);
+      if (response.ok) {
+        const text = await response.text();
+        console.log('Backend is running:', text);
+      }
+    } catch (err) {
+      console.error('Backend connection failed:', err);
+    }
+  }
+
+  // Test search endpoints
+  async function testSearchEndpoints() {
+    try {
+      console.log('Testing search endpoints...');
       
-      const data: SearchResponse = await apiFetch(`/search/companies?${params}`);
-      setCompanies(data.companies);
-      setPagination(data.pagination);
-    } catch (err: any) {
-      setError(err.message || "Failed to search companies");
-    } finally {
-      setLoading(false);
+      // Test basic search
+      const testResponse = await apiFetch('/search/test-search');
+      console.log('Test search response:', testResponse);
+      
+      // Test industries endpoint
+      const industriesResponse = await apiFetch('/search/industries');
+      console.log('Industries response:', industriesResponse);
+      
+    } catch (err) {
+      console.error('Search endpoints test failed:', err);
     }
   }
 
@@ -271,10 +310,18 @@ export default function SearchPage() {
                         )}
                       </div>
                       {company.logo_url && (
-                        <img
+                        <Image
                           src={company.logo_url}
                           alt={`${company.name} logo`}
                           className="w-12 h-12 object-contain ml-4 rounded-lg"
+                          width={48}
+                          height={48}
+                          onError={(e) => {
+                            console.warn(`Failed to load image for ${company.name}:`, company.logo_url);
+                            // Hide the image element on error
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
                         />
                       )}
                     </div>

@@ -27,8 +27,8 @@ export default function LoginPage() {
       dispatch(setToken(data.token));
       dispatch(setUser(data.user));
       router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function LoginPage() {
           {/* Register Link */}
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Don't have an account?
+              Don&apos;t have an account?
             </p>
             <Link
               href="/register"

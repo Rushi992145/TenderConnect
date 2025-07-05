@@ -40,8 +40,8 @@ export default function TendersPage() {
       try {
         const data = await apiFetch("/tenders");
         setTenders(data.tenders || []);
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch tenders");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to fetch tenders");
       } finally {
         setLoading(false);
       }
@@ -70,8 +70,8 @@ export default function TendersPage() {
       setApplyStatus(s => ({ ...s, [selectedTender.id]: "applied" }));
       setShowApplyModal(false);
       setSelectedTender(null);
-    } catch (err: any) {
-      setFormError(err.message || "Failed to apply");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Failed to apply");
     } finally {
       setFormLoading(false);
     }
@@ -113,8 +113,8 @@ export default function TendersPage() {
       });
       setTenders(tenders => [data, ...tenders]);
       setShowModal(false);
-    } catch (err: any) {
-      setFormError(err.message || "Failed to create tender");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Failed to create tender");
     } finally {
       setFormLoading(false);
     }

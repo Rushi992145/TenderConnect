@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../api";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../store/store";
 import { setCompany } from "../../store/userCompanySlice";
+import Image from "next/image";
 
 interface Application {
   id: number;
@@ -71,15 +72,7 @@ export default function ProfilePage() {
   const [serviceError, setServiceError] = useState("");
   const [serviceLoading, setServiceLoading] = useState(false);
 
-  useEffect(() => {
-    if (hasCompany) {
-      fetchMyTenders();
-      fetchMyApplications();
-      fetchGoodsServices();
-    }
-  }, [hasCompany]);
-
-  async function fetchMyTenders() {
+  const fetchMyTenders = useCallback(async () => {
     setLoadingTenders(true);
     try {
       const data = await apiFetch("/tenders/my", {
@@ -88,14 +81,14 @@ export default function ProfilePage() {
         },
       });
       setMyTenders(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch my tenders:", err);
     } finally {
       setLoadingTenders(false);
     }
-  }
+  }, [token]);
 
-  async function fetchMyApplications() {
+  const fetchMyApplications = useCallback(async () => {
     setLoadingApplications(true);
     try {
       const data = await apiFetch("/applications/my", {
@@ -104,14 +97,14 @@ export default function ProfilePage() {
         },
       });
       setMyApplications(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch my applications:", err);
     } finally {
       setLoadingApplications(false);
     }
-  }
+  }, [token]);
 
-  async function fetchGoodsServices() {
+  const fetchGoodsServices = useCallback(async () => {
     setLoadingServices(true);
     try {
       const data = await apiFetch("/companies/goods-services", {
@@ -120,12 +113,20 @@ export default function ProfilePage() {
         },
       });
       setGoodsServices(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch goods/services:", err);
     } finally {
       setLoadingServices(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    if (hasCompany) {
+      fetchMyTenders();
+      fetchMyApplications();
+      fetchGoodsServices();
+    }
+  }, [hasCompany, fetchGoodsServices, fetchMyApplications, fetchMyTenders]);
 
   async function fetchTenderApplications(tenderId: number) {
     try {
@@ -135,7 +136,7 @@ export default function ProfilePage() {
         },
       });
       setTenderApplications(prev => ({ ...prev, [tenderId]: data }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch tender applications:", err);
     }
   }
@@ -151,7 +152,7 @@ export default function ProfilePage() {
       if (logoFile) {
         try {
           finalLogoUrl = await fileToBase64(logoFile);
-        } catch (err) {
+        } catch {
           setError("Failed to process logo image");
           setLoading(false);
           return;
@@ -188,9 +189,9 @@ export default function ProfilePage() {
       setLogoUrl("");
       setLogoFile(null);
       setLogoPreview("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Company registration error:', err);
-      setError(err.message || "Failed to register company");
+      setError(err instanceof Error ? err.message : "Failed to register company");
     } finally {
       setLoading(false);
     }
@@ -240,8 +241,8 @@ export default function ProfilePage() {
       }
       fetchGoodsServices();
       closeServiceModal();
-    } catch (err: any) {
-      setServiceError(err.message || "Failed to save service");
+    } catch (err: unknown) {
+      setServiceError(err instanceof Error ? err.message : "Failed to save service");
     } finally {
       setServiceLoading(false);
     }
@@ -258,7 +259,7 @@ export default function ProfilePage() {
         },
       });
       fetchGoodsServices();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to delete service:", err);
     }
   }
@@ -502,10 +503,18 @@ export default function ProfilePage() {
                       {logoPreview && (
                         <div className="mb-4">
                           <div className="relative inline-block">
-                            <img
+                            <Image
                               src={logoPreview}
                               alt="Logo preview"
+                              width={80}
+                              height={80}
                               className="w-20 h-20 object-contain rounded-lg border border-gray-200 dark:border-gray-600"
+                              onError={(e) => {
+                                console.warn('Failed to load logo preview');
+                                // Hide the image element on error
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
                             />
                             <button
                               type="button"
@@ -621,7 +630,7 @@ export default function ProfilePage() {
             <div className="text-center">Loading your tenders...</div>
           ) : myTenders.length === 0 ? (
             <div className="bg-white text-black rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500 mb-4">You haven't created any tenders yet.</p>
+              <p className="text-gray-500 mb-4">You haven&apos;t created any tenders yet.</p>
               <Link href="/tenders" className="text-blue-600 hover:underline font-medium">Create Your First Tender</Link>
             </div>
           ) : (
@@ -681,7 +690,7 @@ export default function ProfilePage() {
             <div className="text-center">Loading your applications...</div>
           ) : myApplications.length === 0 ? (
             <div className="bg-white text-black rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500 mb-4">You haven't applied to any tenders yet.</p>
+              <p className="text-gray-500 mb-4">You haven&apos;t applied to any tenders yet.</p>
               <Link href="/tenders" className="text-blue-600 hover:underline font-medium">Browse Available Tenders</Link>
             </div>
           ) : (
@@ -730,7 +739,7 @@ export default function ProfilePage() {
             <div className="text-center">Loading your services...</div>
           ) : goodsServices.length === 0 ? (
             <div className="bg-white text-black rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500 mb-4">You haven't added any goods or services yet.</p>
+              <p className="text-gray-500 mb-4">You haven&apos;t added any goods or services yet.</p>
               <button
                 onClick={() => openServiceModal()}
                 className="text-blue-600 hover:underline font-medium"

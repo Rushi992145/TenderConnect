@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "../../../api";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Company {
   id: number;
@@ -34,24 +35,24 @@ export default function CompanyDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (companyId) {
-      fetchCompanyDetails();
-    }
-  }, [companyId]);
-
-  async function fetchCompanyDetails() {
+  const fetchCompanyDetails = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const data = await apiFetch(`/search/companies/${companyId}`);
       setCompany(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch company details");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch company details");
     } finally {
       setLoading(false);
     }
-  }
+  }, [companyId]);
+
+  useEffect(() => {
+    if (companyId) {
+      fetchCompanyDetails();
+    }
+  }, [companyId, fetchCompanyDetails]);
 
   if (loading) {
     return (
@@ -128,10 +129,18 @@ export default function CompanyDetailsPage() {
             
             {company.logo_url && (
               <div className="flex justify-center">
-                <img
+                <Image
                   src={company.logo_url}
                   alt={`${company.name} logo`}
                   className="max-w-32 max-h-32 object-contain"
+                  width={128}
+                  height={128}
+                  onError={(e) => {
+                    console.warn(`Failed to load image for ${company.name}:`, company.logo_url);
+                    // Hide the image element on error
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
               </div>
             )}

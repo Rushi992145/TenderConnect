@@ -16,12 +16,29 @@ router.get('/test-companies', async (req, res) => {
   }
 });
 
+// Simple test endpoint for basic company search
+router.get('/test-search', async (req, res) => {
+  try {
+    const companies = await db('companies')
+      .select('id', 'name', 'industry')
+      .limit(5);
+    res.json({
+      success: true,
+      companies: companies
+    });
+  } catch (err) {
+    console.error('Test search error:', err);
+    res.status(500).json({ error: 'Test search failed', details: err.message });
+  }
+});
+
 // GET /search/companies?name=...&industry=...&service=...&page=...&limit=...
 router.get('/companies', async (req, res) => {
   const { name, industry, service, page = 1, limit = 10 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   
   try {
+    // Start with a simple query
     let query = db('companies')
       .select(
         'companies.id',
@@ -30,42 +47,58 @@ router.get('/companies', async (req, res) => {
         'companies.description',
         'companies.logo_url',
         'companies.created_at'
-      )
-      .leftJoin('goods_services', 'companies.id', 'goods_services.company_id');
+      );
 
     // Build search conditions
-    const conditions = [];
-    
     if (name) {
-      conditions.push(db.raw('companies.name ILIKE ?', [`%${name}%`]));
+      query = query.where('companies.name', 'ilike', `%${name}%`);
     }
     if (industry) {
-      conditions.push(db.raw('companies.industry ILIKE ?', [`%${industry}%`]));
-    }
-    if (service) {
-      conditions.push(db.raw('goods_services.name ILIKE ?', [`%${service}%`]));
+      query = query.where('companies.industry', 'ilike', `%${industry}%`);
     }
 
-    // Apply search conditions if any
-    if (conditions.length > 0) {
-      query = query.where(function() {
-        conditions.forEach((condition, index) => {
-          if (index === 0) {
-            this.where(condition);
-          } else {
-            this.orWhere(condition);
+    // If service filter is applied, we need to find companies that have this service
+    let companyIds = null;
+    if (service) {
+      const companiesWithService = await db('goods_services')
+        .where('name', 'ilike', `%${service}%`)
+        .select('company_id');
+      
+      companyIds = companiesWithService.map(c => c.company_id);
+      if (companyIds.length > 0) {
+        query = query.whereIn('companies.id', companyIds);
+      } else {
+        // If no companies have this service, return empty result
+        return res.json({
+          companies: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0
           }
         });
-      });
+      }
     }
 
     // Get total count for pagination
-    const countQuery = query.clone();
-    const totalCount = await countQuery.count('companies.id as total').first();
+    const countQuery = db('companies');
+    
+    // Apply the same filters to count query
+    if (name) {
+      countQuery.where('companies.name', 'ilike', `%${name}%`);
+    }
+    if (industry) {
+      countQuery.where('companies.industry', 'ilike', `%${industry}%`);
+    }
+    if (service && companyIds) {
+      countQuery.whereIn('companies.id', companyIds);
+    }
+    
+    const totalCount = await countQuery.count('* as total').first();
 
-    // Apply pagination and grouping
+    // Apply pagination and ordering
     const companies = await query
-      .groupBy('companies.id')
       .orderBy('companies.name', 'asc')
       .limit(parseInt(limit))
       .offset(offset);
@@ -94,6 +127,7 @@ router.get('/companies', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('Search error:', err);
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 });

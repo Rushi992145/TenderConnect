@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -7,18 +7,35 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
-  let data;
+  
+  const url = `${API_BASE}${path}`;
+  console.log('API Request:', url, options);
+  
   try {
-    data = await res.json();
-  } catch {
-    data = null;
+    const res = await fetch(url, {
+      ...options,
+      headers,
+    });
+    
+    console.log('API Response status:', res.status, res.statusText);
+    
+    let data;
+    try {
+      data = await res.json();
+      console.log('API Response data:', data);
+    } catch {
+      data = null;
+      console.log('API Response: No JSON data');
+    }
+    
+    if (!res.ok) {
+      const errorMessage = data?.error || data?.details || `HTTP ${res.status}: ${res.statusText}`;
+      console.error('API Error:', errorMessage, data);
+      throw new Error(errorMessage);
+    }
+    return data;
+  } catch (error) {
+    console.error(`API Error for ${path}:`, error);
+    throw error;
   }
-  if (!res.ok) {
-    throw new Error(data?.error || 'API error');
-  }
-  return data;
 } 

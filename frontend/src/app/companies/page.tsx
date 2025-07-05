@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { apiFetch } from "../api";
-import Link from "next/link";
+import Image from "next/image";
 
 interface Company {
   id: number;
@@ -46,8 +46,8 @@ export default function CompaniesPage() {
     try {
       const data = await apiFetch("/search/all-companies");
       setCompanies(data || []);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch companies");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch companies");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export default function CompaniesPage() {
       const data = await apiFetch(`/search/companies/${companyId}`);
       setSelectedCompany(data);
       setShowCompanyModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch company details:", err);
     } finally {
       setLoadingCompanyDetails(false);
@@ -162,10 +162,18 @@ export default function CompaniesPage() {
                           )}
                         </div>
                         {company.logo_url && (
-                          <img
+                          <Image
                             src={company.logo_url}
                             alt={`${company.name} logo`}
                             className="w-12 h-12 object-contain ml-4 rounded-lg"
+                            width={48}
+                            height={48}
+                            onError={(e) => {
+                              console.warn(`Failed to load image for ${company.name}:`, company.logo_url);
+                              // Hide the image element on error
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
                           />
                         )}
                       </div>
@@ -274,10 +282,18 @@ export default function CompaniesPage() {
                 
                 {selectedCompany.logo_url && (
                   <div className="flex justify-center items-center">
-                    <img
+                    <Image
                       src={selectedCompany.logo_url}
                       alt={`${selectedCompany.name} logo`}
                       className="w-32 h-32 object-contain rounded-xl shadow-lg"
+                      width={128}
+                      height={128}
+                      onError={(e) => {
+                        console.warn(`Failed to load image for ${selectedCompany.name}:`, selectedCompany.logo_url);
+                        // Hide the image element on error
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
                     />
                   </div>
                 )}
