@@ -10,7 +10,9 @@ export default function Navbar() {
   const dispatch = useDispatch<AppDispatch>();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsLoggedIn(!!user && !!user.id);
@@ -22,26 +24,33 @@ export default function Navbar() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
     }
-    if (dropdownOpen) {
+    if (dropdownOpen || mobileMenuOpen) {
       document.addEventListener("mousedown", handleClick);
     } else {
       document.removeEventListener("mousedown", handleClick);
     }
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, mobileMenuOpen]);
 
   function handleLogout() {
     dispatch(logout());
+    setMobileMenuOpen(false);
     window.location.href = "/";
   }
 
   return (
-    <nav className="w-full flex items-center justify-between px-8 py-4 bg-black/90 border-b border-white/10 shadow-sm sticky top-0 z-50">
+    <nav className="w-full flex items-center justify-between px-4 sm:px-8 py-4 bg-black/90 border-b border-white/10 shadow-sm sticky top-0 z-50">
+      {/* Logo */}
       <div className="flex items-center gap-3">
-        <Link href="/" className="text-2xl font-bold tracking-tight text-white hover:text-gray-200 transition">TenderConnect</Link>
+        <Link href="/" className="text-xl sm:text-2xl font-bold tracking-tight text-white hover:text-gray-200 transition">TenderConnect</Link>
       </div>
-      <div className="flex items-center gap-6 text-base font-medium">
+
+      {/* Desktop Navigation */}
+      <div className="hidden md:flex items-center gap-6 text-base font-medium">
         <Link href="/" className="hover:text-gray-300 transition">Home</Link>
         <Link href="/tenders" className="hover:text-gray-300 transition">Tenders</Link>
         <Link href="/companies" className="hover:text-gray-300 transition">Companies</Link>
@@ -72,6 +81,87 @@ export default function Navbar() {
           <Link href="/login" className="hover:text-gray-300 transition">Login</Link>
         )}
       </div>
+
+      {/* Mobile Menu Button */}
+      <div className="md:hidden">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="text-white hover:text-gray-300 transition p-2"
+          aria-label="Toggle mobile menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {mobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div 
+          ref={mobileMenuRef}
+          className="absolute top-full left-0 right-0 bg-black/95 border-b border-white/10 shadow-lg md:hidden"
+        >
+          <div className="flex flex-col py-4 px-4 space-y-4">
+            <Link 
+              href="/" 
+              className="text-white hover:text-gray-300 transition py-2 border-b border-white/10"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link 
+              href="/tenders" 
+              className="text-white hover:text-gray-300 transition py-2 border-b border-white/10"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Tenders
+            </Link>
+            <Link 
+              href="/companies" 
+              className="text-white hover:text-gray-300 transition py-2 border-b border-white/10"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Companies
+            </Link>
+            <Link 
+              href="/search" 
+              className="text-white hover:text-gray-300 transition py-2 border-b border-white/10"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Search
+            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link 
+                  href="/profile" 
+                  className="text-white hover:text-gray-300 transition py-2 border-b border-white/10"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Profile
+                </Link>
+                <button 
+                  onClick={handleLogout} 
+                  className="text-left text-red-400 hover:text-red-300 transition py-2"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link 
+                href="/login" 
+                className="text-white hover:text-gray-300 transition py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 } 
