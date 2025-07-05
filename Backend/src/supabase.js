@@ -1,15 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const config = require('./config');
 
 let supabase = null;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!config.supabase.url || !config.supabase.key) {
   console.error('Missing Supabase configuration. Please set SUPABASE_URL and SUPABASE_KEY environment variables.');
   console.error('Image uploads will be disabled until Supabase is configured.');
 } else {
-  supabase = createClient(supabaseUrl, supabaseKey);
+  supabase = createClient(config.supabase.url, config.supabase.key);
 }
 
 // Function to upload image to Supabase storage
